@@ -242,6 +242,19 @@ const document = createDocument({
 - `--verbose`, `-v`: Show detailed output for each file processed
 - `--ignore <patterns>`: Comma-separated glob patterns to ignore
 
+### Default Ignored Directories
+
+The tool automatically ignores these common directories:
+- `node_modules/`
+- `dist/`
+- `build/`
+- `.git/`
+- `.next/`
+- `.nuxt/`
+- `coverage/`
+
+You can add additional patterns with the `--ignore` option.
+
 ## Output Statistics
 
 The tool provides detailed statistics on all transformations:

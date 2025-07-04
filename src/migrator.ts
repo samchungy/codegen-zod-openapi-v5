@@ -15,7 +15,16 @@ export class ZodOpenApiMigrator {
     this.options = {
       dryRun: false,
       verbose: false,
-      ignorePatterns: [],
+      ignorePatterns: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/build/**',
+        '**/.git/**',
+        '**/.next/**',
+        '**/.nuxt/**',
+        '**/coverage/**',
+        ...(options.ignorePatterns || [])
+      ],
       ...options,
     };
   }
