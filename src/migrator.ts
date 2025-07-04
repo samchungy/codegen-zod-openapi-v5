@@ -87,6 +87,7 @@ export class ZodOpenApiMigrator {
       changes: {
         removedImports: 0,
         removedExtendCalls: 0,
+        zodImportsMigrated: 0,
         openapiToMeta: 0,
         refToId: 0,
         refTypeToUnusedIO: 0,
@@ -603,6 +604,36 @@ export class ZodOpenApiMigrator {
     traverse(ast, {
       // Handle import statements
       ImportDeclaration(path) {
+        // Handle zod imports
+        if (path.node.source.value === "zod") {
+          let hasZodImport = false;
+          
+          // Check if this import has 'z' as named import or default import
+          path.node.specifiers.forEach((spec) => {
+            if (
+              (t.isImportDefaultSpecifier(spec) && spec.local.name === "z") ||
+              (t.isImportSpecifier(spec) && 
+               t.isIdentifier(spec.imported) && 
+               spec.imported.name === "z" && 
+               spec.local.name === "z") ||
+              (t.isImportNamespaceSpecifier(spec) && spec.local.name === "z")
+            ) {
+              hasZodImport = true;
+            }
+          });
+
+          if (hasZodImport) {
+            // Transform to import * as z from 'zod/v4'
+            path.node.source.value = "zod/v4";
+            path.node.specifiers = [
+              t.importNamespaceSpecifier(t.identifier("z"))
+            ];
+            stats.changes.zodImportsMigrated++;
+            hasModifications = true;
+          }
+        }
+
+        // Handle zod-openapi imports
         if (path.node.source.value === "zod-openapi") {
           const specifiers = path.node.specifiers;
           const filteredSpecifiers = specifiers.filter((spec) => {
@@ -764,13 +795,18 @@ export class ZodOpenApiMigrator {
     return (
       changes.removedImports > 0 ||
       changes.removedExtendCalls > 0 ||
+      changes.zodImportsMigrated > 0 ||
       changes.openapiToMeta > 0 ||
       changes.refToId > 0 ||
       changes.refTypeToUnusedIO > 0 ||
       changes.unionOneOfToOverride > 0 ||
       changes.effectTypeCommented > 0 ||
       changes.schemaTypeToIO > 0 ||
-      changes.componentRefPath > 0
+      changes.componentRefPath > 0 ||
+      changes.componentsToSchemaComponents > 0 ||
+      changes.createSchemaUnionOneOfToOverride > 0 ||
+      changes.createSchemaDefaultDateSchemaToOverride > 0 ||
+      changes.defaultDateSchemaToOverride > 0
     );
   }
 
@@ -787,6 +823,13 @@ export class ZodOpenApiMigrator {
       console.log(
         chalk.blue(
           `    - Removed ${changes.removedExtendCalls} extendZodWithOpenApi calls`
+        )
+      );
+    }
+    if (changes.zodImportsMigrated > 0) {
+      console.log(
+        chalk.blue(
+          `    - Migrated ${changes.zodImportsMigrated} zod imports to 'zod/v4'`
         )
       );
     }
@@ -874,6 +917,8 @@ export class ZodOpenApiMigrator {
         importsRemoved: acc.importsRemoved + stats.changes.removedImports,
         extendCallsRemoved:
           acc.extendCallsRemoved + stats.changes.removedExtendCalls,
+        zodImportsMigrated:
+          acc.zodImportsMigrated + stats.changes.zodImportsMigrated,
         openapiToMetaChanges:
           acc.openapiToMetaChanges + stats.changes.openapiToMeta,
         refToIdChanges: acc.refToIdChanges + stats.changes.refToId,
@@ -903,6 +948,7 @@ export class ZodOpenApiMigrator {
       {
         importsRemoved: 0,
         extendCallsRemoved: 0,
+        zodImportsMigrated: 0,
         openapiToMetaChanges: 0,
         refToIdChanges: 0,
         refTypeToUnusedIOChanges: 0,
@@ -930,6 +976,7 @@ export class ZodOpenApiMigrator {
       filesModified: 0,
       importsRemoved: 0,
       extendCallsRemoved: 0,
+      zodImportsMigrated: 0,
       openapiToMetaChanges: 0,
       refToIdChanges: 0,
       refTypeToUnusedIOChanges: 0,

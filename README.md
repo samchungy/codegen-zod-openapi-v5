@@ -2,6 +2,16 @@
 
 A comprehensive command-line tool to help migrate codebases from zod-openapi v4 to v5.
 
+## Quick Start
+
+```bash
+# Migrate your entire src directory (dry run to preview changes)
+pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run
+
+# Run the actual migration
+pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts"
+```
+
 ## Features
 
 This tool performs the following migrations automatically:
@@ -11,48 +21,54 @@ This tool performs the following migrations automatically:
 - Removes `extendZodWithOpenApi` from import statements
 - Removes calls to `extendZodWithOpenApi(z)`
 
-### 2. **Converts `.openapi()` to `.meta()`**
+### 2. **Migrates zod imports to zod/v4**
+- Changes `import { z } from 'zod'` to `import * as z from 'zod/v4'`
+- Changes `import z from 'zod'` to `import * as z from 'zod/v4'`
+- Changes `import * as z from 'zod'` to `import * as z from 'zod/v4'`
+- Only migrates imports that import `z` specifically
+
+### 3. **Converts `.openapi()` to `.meta()`**
 
 - Changes all `.openapi()` method calls to `.meta()`
 - Works with all Zod types (string, object, array, union, etc.)
 
-### 3. **Converts `ref` to `id` in metadata**
+### 4. **Converts `ref` to `id` in metadata**
 
 - Changes `ref: 'some-ref'` to `id: 'some-ref'` within `.meta()` calls
 - Handles nested `ref` properties in `header` and `param` objects
 - Recursively processes deeply nested objects
 - Works with `ZodOpenApi*` type objects and `createDocument` calls
 
-### 4. **Converts `refType` to `unusedIO` in metadata**
+### 5. **Converts `refType` to `unusedIO` in metadata**
 
 - Changes `refType: 'input'` to `unusedIO: 'input'` within `.meta()` calls
 - Supports all refType values: 'input', 'output', 'both'
 
-### 5. **Transforms `unionOneOf: true` to `override` function**
+### 6. **Transforms `unionOneOf: true` to `override` function**
 
 - Converts `unionOneOf: true` in `.meta()` calls to an `override` function
 - Converts `unionOneOf: true` in `createDocument` options to an `override` function
 - Converts `unionOneOf: true` in `createSchema` options to an `opts.override` function
 - Merges with existing `defaultDateSchema` transformations when both are present
 
-### 6. **Comments out `effectType` in `.meta()` calls**
+### 7. **Comments out `effectType` in `.meta()` calls**
 
 - Adds `// TODO: effectType is not supported in v5` comment
 - Preserves the original property for manual review
 
-### 7. **Migrates `createSchema` options**
+### 8. **Migrates `createSchema` options**
 
 - Changes `schemaType` to `io`
 - Changes `componentRefPath` to `schemaComponentRefPath`
 - Changes `components` to `schemaComponents`
 - Converts `defaultDateSchema` to `opts.override` function
 
-### 8. **Migrates `createDocument` options**
+### 9. **Migrates `createDocument` options**
 
 - Converts `defaultDateSchema` to `override` function
 - Merges with `unionOneOf` transformations when both are present
 
-### 9. **Adds `return;` statements to override functions**
+### 10. **Adds `return;` statements to override functions**
 
 - Ensures all generated override functions have proper return statements
 
@@ -67,6 +83,43 @@ pnpm build
 ```
 
 ## Usage
+
+### Using pnpm dlx (Recommended)
+
+Run the migration tool directly without installing:
+
+```bash
+# Basic usage - migrate all TypeScript files in src directory
+pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts"
+
+# Dry run (preview changes without modifying files)
+pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run
+
+# Verbose output
+pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --verbose
+
+# Ignore specific patterns
+pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --ignore "src/test/**,src/generated/**"
+
+# Combine options
+pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run --verbose --ignore "*.test.ts"
+```
+
+### Using npx or yarn dlx
+
+For npm or yarn users:
+
+```bash
+# Using npx
+npx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run
+
+# Using yarn dlx
+yarn dlx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run
+```
+
+### Using Local Installation
+
+If you've cloned this repository:
 
 ```bash
 # Basic usage - migrate all TypeScript files in src directory
@@ -164,7 +217,7 @@ const document = createDocument(
 ### After Migration
 
 ```typescript
-import { z } from "zod";
+import * as z from "zod/v4";
 import { createDocument, createSchema } from "zod-openapi";
 
 // Basic schema transformations
@@ -285,6 +338,7 @@ The tool provides detailed statistics on all transformations:
   - Files modified: 3
   - Imports removed: 3
   - Extend calls removed: 3
+  - Zod imports migrated: 3
   - openapi() → meta(): 15
   - ref → id changes: 8
   - refType → unusedIO changes: 4

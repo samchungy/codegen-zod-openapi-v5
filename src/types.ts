@@ -9,6 +9,7 @@ export interface MigrationResult {
   filesModified: number;
   importsRemoved: number;
   extendCallsRemoved: number;
+  zodImportsMigrated: number;
   openapiToMetaChanges: number;
   refToIdChanges: number;
   refTypeToUnusedIOChanges: number;
@@ -27,6 +28,7 @@ export interface MigrationStats {
   changes: {
     removedImports: number;
     removedExtendCalls: number;
+    zodImportsMigrated: number;
     openapiToMeta: number;
     refToId: number;
     refTypeToUnusedIO: number;

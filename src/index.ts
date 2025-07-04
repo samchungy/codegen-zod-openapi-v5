@@ -51,6 +51,9 @@ program
         chalk.cyan(`  - Extend calls removed: ${result.extendCallsRemoved}`)
       );
       console.log(
+        chalk.cyan(`  - Zod imports migrated: ${result.zodImportsMigrated}`)
+      );
+      console.log(
         chalk.cyan(`  - openapi() → meta(): ${result.openapiToMetaChanges}`)
       );
       console.log(chalk.cyan(`  - ref → id changes: ${result.refToIdChanges}`));
