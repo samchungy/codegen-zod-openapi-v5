@@ -6,6 +6,9 @@
   "bin": {
     "zod-openapi-migrate": "dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
