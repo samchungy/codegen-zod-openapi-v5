@@ -1,60 +1,51 @@
 # codegen-zod-openapi-v5
 
-A command-line tool to help migrate codebases from zod-openapi v4 to v5.
+A comprehensive command-line tool to help migrate codebases from zod-openapi v4 to v5.
 
 ## Features
 
-This tool performs th// ZodOpenApi type objects
-const response: ZodOpenApiResponseObject = {
-description: '200 OK',
-content: {
-'application/json': {
-schema: z.object({ a: z.string() }),
-},
-},
-id: 'some-response',
-};
+This tool performs the following migrations automatically:
 
-// createDocument calls
-const document = createDocument({
-openapi: '3.1.0',
-paths: {
-'/users': {
-id: 'registeredPath',
-get: {
-requestBody: {
-id: 'registeredRequestBody',
-content: {
-'application/json': {
-schema: z.object({ name: z.string() }).meta({ id: 'UserSchema' })
-}
-}
-}
-}
-}
-}
-});
+### 1. **Removes `extendZodWithOpenApi` imports and calls**
+- Removes `extendZodWithOpenApi` from import statements
+- Removes calls to `extendZodWithOpenApi(z)`
 
-````migrations:
+### 2. **Converts `.openapi()` to `.meta()`**
+- Changes all `.openapi()` method calls to `.meta()`
+- Works with all Zod types (string, object, array, union, etc.)
 
-1. **Removes `extendZodWithOpenApi` imports and calls**
+### 3. **Converts `ref` to `id` in metadata**
+- Changes `ref: 'some-ref'` to `id: 'some-ref'` within `.meta()` calls
+- Handles nested `ref` properties in `header` and `param` objects
+- Recursively processes deeply nested objects
+- Works with `ZodOpenApi*` type objects and `createDocument` calls
 
-   - Removes `extendZodWithOpenApi` from import statements
-   - Removes calls to `extendZodWithOpenApi(z)`
+### 4. **Converts `refType` to `unusedIO` in metadata**
+- Changes `refType: 'input'` to `unusedIO: 'input'` within `.meta()` calls
+- Supports all refType values: 'input', 'output', 'both'
 
-2. **Converts `.openapi()` to `.meta()`**
+### 5. **Transforms `unionOneOf: true` to `override` function**
+- Converts `unionOneOf: true` in `.meta()` calls to an `override` function
+- Converts `unionOneOf: true` in `createDocument` options to an `override` function
+- Converts `unionOneOf: true` in `createSchema` options to an `opts.override` function
+- Merges with existing `defaultDateSchema` transformations when both are present
 
-   - Changes all `.openapi()` method calls to `.meta()`
-   - Works with all Zod types (string, object, array, etc.)
+### 6. **Comments out `effectType` in `.meta()` calls**
+- Adds `// TODO: effectType is not supported in v5` comment
+- Preserves the original property for manual review
 
-3. **Converts `ref` to `id` in metadata**
-   - Changes `ref: 'some-ref'` to `id: 'some-ref'` within `.meta()` calls
-   - Handles nested `ref` properties in `header` and `param` objects
-   - Recursively processes deeply nested objects
+### 7. **Migrates `createSchema` options**
+- Changes `schemaType` to `io`
+- Changes `componentRefPath` to `schemaComponentRefPath`
+- Changes `components` to `schemaComponents`
+- Converts `defaultDateSchema` to `opts.override` function
 
-4. **Converts `refType` to `unusedIO` in metadata**
-   - Changes `refType: 'input'` to `unusedIO: 'input'` within `.meta()` calls
-   - Supports all refType values: 'input', 'output', 'both'
+### 8. **Migrates `createDocument` options**
+- Converts `defaultDateSchema` to `override` function
+- Merges with `unionOneOf` transformations when both are present
+
+### 9. **Adds `return;` statements to override functions**
+- Ensures all generated override functions have proper return statements
 
 ## Installation
 
@@ -64,40 +55,26 @@ pnpm install
 
 # Build the project
 pnpm build
-````
+```
 
 ## Usage
 
 ```bash
 # Basic usage - migrate all TypeScript files in src directory
-npx tsx src/index.ts "src/**/*.ts"
-
-# Or after building
 node dist/index.js "src/**/*.ts"
 
 # Dry run (preview changes without modifying files)
-npx tsx src/index.ts "src/**/*.ts" --dry-run
+node dist/index.js "src/**/*.ts" --dry-run
 
 # Verbose output
-npx tsx src/index.ts "src/**/*.ts" --verbose
+node dist/index.js "src/**/*.ts" --verbose
 
 # Ignore specific patterns
-npx tsx src/index.ts "src/**/*.ts" --ignore "src/test/**,src/generated/**"
+node dist/index.js "src/**/*.ts" --ignore "src/test/**,src/generated/**"
+
+# Combine options
+node dist/index.js "src/**/*.ts" --dry-run --verbose --ignore "*.test.ts"
 ```
-
-4. **Converts `refType` to `unusedIO` in metadata**
-   - Changes `refType: 'input'` to `unusedIO: 'input'` within `.meta()` calls
-   - Supports all refType values: 'input', 'output', 'both'
-
-5. **Converts `ref` to `id` in `ZodOpenApi*` type objects**
-
-   - Changes `ref` to `id` in `ZodOpenApiResponseObject`, `ZodOpenApiCallbackObject`, etc.
-   - Only transforms top-level `ref` properties in these type-annotated objects
-
-5. **Converts `ref` to `id` in `createDocument` calls**
-   - Transforms `ref` properties in object literals passed to `createDocument`
-   - Handles deeply nested OpenAPI specification objects
-   - Works with paths, requestBody, responses, callbacks, etc.
 
 ## Migration Examples
 
@@ -105,83 +82,158 @@ npx tsx src/index.ts "src/**/*.ts" --ignore "src/test/**,src/generated/**"
 
 ```typescript
 import { z } from "zod";
-import { extendZodWithOpenApi } from "zod-openapi";
+import { extendZodWithOpenApi, createDocument, createSchema } from "zod-openapi";
 
 extendZodWithOpenApi(z);
 
+// Basic schema transformations
 const UserSchema = z
   .object({
-    name: z.string().openapi({ description: "User name" }),
-    age: z.number().openapi({ description: "User age" }),
+    name: z.string().openapi({ 
+      description: "User name",
+      refType: "input" 
+    }),
+    age: z.number().openapi({ 
+      description: "User age",
+      effectType: "input" 
+    }),
   })
-  .openapi({ ref: "User" });
-
-const UserListSchema = z.array(UserSchema).openapi({
-  description: "List of users",
-  ref: "UserList",
-});
+  .openapi({ 
+    ref: "User",
+    unionOneOf: true
+  });
 
 // Nested refs in header/param objects
 const headerSchema = z.string().openapi({
   header: { ref: "registeredHeader" },
-  description: "Header with registered ref",
-});
-
-const paramSchema = z.string().openapi({
   param: { ref: "registeredParam" },
-  description: "Param with registered ref",
+  description: "Complex nested refs",
 });
 
-// ZodOpenApi type objects
-const response: ZodOpenApiResponseObject = {
-  description: "200 OK",
-  content: {
-    "application/json": {
-      schema: z.object({ a: z.string() }),
-    },
+// createSchema with various options
+const schema = createSchema(z.date(), {
+  schemaType: 'input',
+  componentRefPath: '#/components/schemas',
+  components: { schemas: {} },
+  defaultDateSchema: {
+    type: 'string',
+    format: 'date-time'
   },
-  ref: "some-response",
-};
+  unionOneOf: true
+});
+
+// createDocument with options
+const document = createDocument({
+  openapi: '3.1.0',
+  info: { title: 'API', version: '1.0.0' },
+  paths: {
+    '/users': {
+      ref: 'registeredPath',
+      get: {
+        requestBody: {
+          ref: 'registeredRequestBody'
+        }
+      }
+    }
+  }
+}, {
+  unionOneOf: true,
+  defaultDateSchema: {
+    type: 'string',
+    format: 'date-time'
+  }
+});
 ```
 
 ### After Migration
 
 ```typescript
 import { z } from "zod";
+import { createDocument, createSchema } from "zod-openapi";
 
+// Basic schema transformations
 const UserSchema = z
   .object({
-    name: z.string().meta({ description: "User name" }),
-    age: z.number().meta({ description: "User age" }),
+    name: z.string().meta({ 
+      description: "User name",
+      unusedIO: "input" 
+    }),
+    age: z.number().meta({ 
+      description: "User age",
+      // TODO: effectType is not supported in v5
+      // effectType: "input" 
+    }),
   })
-  .meta({ id: "User" });
-
-const UserListSchema = z.array(UserSchema).meta({
-  description: "List of users",
-  id: "UserList",
-});
+  .meta({ 
+    id: "User",
+    override: ({ jsonSchema, zodSchema }) => {
+      const def = zodSchema._zod.def;
+      if (def.type === "union") {
+        jsonSchema.oneOf = jsonSchema.anyOf;
+        delete jsonSchema.anyOf;
+        return;
+      }
+    }
+  });
 
 // Nested refs in header/param objects
 const headerSchema = z.string().meta({
   header: { id: "registeredHeader" },
-  description: "Header with registered ref",
-});
-
-const paramSchema = z.string().meta({
   param: { id: "registeredParam" },
-  description: "Param with registered ref",
+  description: "Complex nested refs",
 });
 
-// ZodOpenApi type objects
-const response: ZodOpenApiResponseObject = {
-  description: "200 OK",
-  content: {
-    "application/json": {
-      schema: z.object({ a: z.string() }),
-    },
-  },
-  id: "some-response",
-};
+// createSchema with various options
+const schema = createSchema(z.date(), {
+  io: 'input',
+  schemaComponentRefPath: '#/components/schemas',
+  schemaComponents: { schemas: {} },
+  opts: {
+    override: ({ jsonSchema, zodSchema }) => {
+      const def = zodSchema._zod.def;
+      if (def.type === "union") {
+        jsonSchema.oneOf = jsonSchema.anyOf;
+        delete jsonSchema.anyOf;
+        return;
+      }
+      if (def.type === "date") {
+        jsonSchema.type = 'string';
+        jsonSchema.format = 'date-time';
+        return;
+      }
+    }
+  }
+});
+
+// createDocument with options
+const document = createDocument({
+  openapi: '3.1.0',
+  info: { title: 'API', version: '1.0.0' },
+  paths: {
+    '/users': {
+      id: 'registeredPath',
+      get: {
+        requestBody: {
+          id: 'registeredRequestBody'
+        }
+      }
+    }
+  }
+}, {
+  override: ({ jsonSchema, zodSchema }) => {
+    const def = zodSchema._zod.def;
+    if (def.type === "union") {
+      jsonSchema.oneOf = jsonSchema.anyOf;
+      delete jsonSchema.anyOf;
+      return;
+    }
+    if (def.type === "date") {
+      jsonSchema.type = 'string';
+      jsonSchema.format = 'date-time';
+      return;
+    }
+  }
+});
 ```
 
 ## Options
@@ -189,6 +241,29 @@ const response: ZodOpenApiResponseObject = {
 - `--dry-run`, `-d`: Preview changes without modifying files
 - `--verbose`, `-v`: Show detailed output for each file processed
 - `--ignore <patterns>`: Comma-separated glob patterns to ignore
+
+## Output Statistics
+
+The tool provides detailed statistics on all transformations:
+
+```
+📊 Summary:
+  - Files processed: 5
+  - Files modified: 3
+  - Imports removed: 3
+  - Extend calls removed: 3
+  - openapi() → meta(): 15
+  - ref → id changes: 8
+  - refType → unusedIO changes: 4
+  - unionOneOf → override changes: 2
+  - effectType commented: 1
+  - schemaType → io changes: 2
+  - componentRefPath → schemaComponentRefPath changes: 1
+  - components → schemaComponents changes: 1
+  - createSchema unionOneOf → opts.override changes: 1
+  - createSchema defaultDateSchema → opts.override changes: 2
+  - defaultDateSchema → override changes: 1
+```
 
 ## Supported File Types
 
@@ -215,6 +290,14 @@ pnpm build
 # Run tests
 pnpm test
 ```
+
+## Edge Cases Handled
+
+- **Merging transformations**: When both `unionOneOf` and `defaultDateSchema` are present, they're merged into a single override function
+- **Nested objects**: Recursively processes deeply nested `ref` properties
+- **Mixed scenarios**: Handles files with multiple different transformation types
+- **Existing overrides**: Preserves existing override functions when possible
+- **Return statements**: Ensures all generated override functions have proper return statements
 
 ## License
 
