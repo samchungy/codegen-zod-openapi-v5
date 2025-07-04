@@ -58,6 +58,25 @@ extendZodWithOpenApi(z);
       expect(migratedContent).toContain("SomeOtherImport");
       expect(migratedContent).not.toContain("extendZodWithOpenApi");
     });
+
+    it("should remove side-effect imports from zod-openapi/extend", async () => {
+      const content = `
+import 'zod-openapi/extend';
+import { z } from 'zod';
+
+const schema = z.string().openapi({ description: 'test' });
+`;
+
+      const filePath = createTestFile("test.ts", content);
+      const result = await migrator.migrate(filePath);
+
+      const migratedContent = fs.readFileSync(filePath, "utf8");
+
+      expect(result.importsRemoved).toBe(1);
+      expect(migratedContent).not.toContain("import 'zod-openapi/extend'");
+      expect(migratedContent).toContain("import * as z from \"zod/v4\"");
+      expect(migratedContent).toContain(".meta(");
+    });
   });
 
   describe("Method transformation", () => {

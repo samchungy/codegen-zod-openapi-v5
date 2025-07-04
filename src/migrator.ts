@@ -604,6 +604,9 @@ export class ZodOpenApiMigrator {
     traverse(ast, {
       // Handle import statements
       ImportDeclaration(path) {
+        // Skip if the import has been removed
+        if (!path.node || !path.node.source) return;
+
         // Handle zod imports
         if (path.node.source.value === "zod") {
           let hasZodImport = false;
@@ -631,6 +634,7 @@ export class ZodOpenApiMigrator {
             stats.changes.zodImportsMigrated++;
             hasModifications = true;
           }
+          return;
         }
 
         // Handle zod-openapi imports
@@ -655,6 +659,16 @@ export class ZodOpenApiMigrator {
               path.node.specifiers = filteredSpecifiers;
             }
           }
+          return;
+        }
+
+        // Handle zod-openapi/extend side-effect imports
+        if (path.node.source.value === "zod-openapi/extend") {
+          stats.changes.removedImports++;
+          hasModifications = true;
+          // Remove the entire side-effect import
+          path.remove();
+          return;
         }
       },
 
