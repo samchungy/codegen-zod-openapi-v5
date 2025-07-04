@@ -54,15 +54,49 @@ program
         chalk.cyan(`  - openapi() → meta(): ${result.openapiToMetaChanges}`)
       );
       console.log(chalk.cyan(`  - ref → id changes: ${result.refToIdChanges}`));
-      console.log(chalk.cyan(`  - refType → unusedIO changes: ${result.refTypeToUnusedIOChanges}`));
-      console.log(chalk.cyan(`  - unionOneOf → override changes: ${result.unionOneOfToOverrideChanges}`));
-      console.log(chalk.cyan(`  - effectType commented: ${result.effectTypeCommented}`));
-      console.log(chalk.cyan(`  - schemaType → io changes: ${result.schemaTypeToIOChanges}`));
-      console.log(chalk.cyan(`  - componentRefPath → schemaComponentRefPath changes: ${result.componentRefPathChanges}`));
-      console.log(chalk.cyan(`  - components → schemaComponents changes: ${result.componentsToSchemaComponentsChanges}`));
-      console.log(chalk.cyan(`  - createSchema unionOneOf → opts.override changes: ${result.createSchemaUnionOneOfToOverrideChanges}`));
-      console.log(chalk.cyan(`  - createSchema defaultDateSchema → opts.override changes: ${result.createSchemaDefaultDateSchemaToOverrideChanges}`));
-      console.log(chalk.cyan(`  - defaultDateSchema → override changes: ${result.defaultDateSchemaToOverrideChanges}`));
+      console.log(
+        chalk.cyan(
+          `  - refType → unusedIO changes: ${result.refTypeToUnusedIOChanges}`
+        )
+      );
+      console.log(
+        chalk.cyan(
+          `  - unionOneOf → override changes: ${result.unionOneOfToOverrideChanges}`
+        )
+      );
+      console.log(
+        chalk.cyan(`  - effectType commented: ${result.effectTypeCommented}`)
+      );
+      console.log(
+        chalk.cyan(
+          `  - schemaType → io changes: ${result.schemaTypeToIOChanges}`
+        )
+      );
+      console.log(
+        chalk.cyan(
+          `  - componentRefPath → schemaComponentRefPath changes: ${result.componentRefPathChanges}`
+        )
+      );
+      console.log(
+        chalk.cyan(
+          `  - components → schemaComponents changes: ${result.componentsToSchemaComponentsChanges}`
+        )
+      );
+      console.log(
+        chalk.cyan(
+          `  - createSchema unionOneOf → opts.override changes: ${result.createSchemaUnionOneOfToOverrideChanges}`
+        )
+      );
+      console.log(
+        chalk.cyan(
+          `  - createSchema defaultDateSchema → opts.override changes: ${result.createSchemaDefaultDateSchemaToOverrideChanges}`
+        )
+      );
+      console.log(
+        chalk.cyan(
+          `  - defaultDateSchema → override changes: ${result.defaultDateSchemaToOverrideChanges}`
+        )
+      );
     } catch (error) {
       console.error(chalk.red("❌ Migration failed:"), error);
       process.exit(1);

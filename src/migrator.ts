@@ -16,14 +16,14 @@ export class ZodOpenApiMigrator {
       dryRun: false,
       verbose: false,
       ignorePatterns: [
-        '**/node_modules/**',
-        '**/dist/**',
-        '**/build/**',
-        '**/.git/**',
-        '**/.next/**',
-        '**/.nuxt/**',
-        '**/coverage/**',
-        ...(options.ignorePatterns || [])
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/.git/**",
+        "**/.next/**",
+        "**/.nuxt/**",
+        "**/coverage/**",
+        ...(options.ignorePatterns || []),
       ],
       ...options,
     };
@@ -155,28 +155,40 @@ export class ZodOpenApiMigrator {
           ) {
             // Replace unionOneOf: true with override function
             prop.key.name = "override";
-            
+
             // Create the override function: ({ jsonSchema }) => { jsonSchema.oneOf = jsonSchema.anyOf; delete jsonSchema.anyOf; }
             const param = t.objectPattern([
-              t.objectProperty(t.identifier("jsonSchema"), t.identifier("jsonSchema"))
+              t.objectProperty(
+                t.identifier("jsonSchema"),
+                t.identifier("jsonSchema")
+              ),
             ]);
-            
+
             const body = t.blockStatement([
               t.expressionStatement(
                 t.assignmentExpression(
                   "=",
-                  t.memberExpression(t.identifier("jsonSchema"), t.identifier("oneOf")),
-                  t.memberExpression(t.identifier("jsonSchema"), t.identifier("anyOf"))
+                  t.memberExpression(
+                    t.identifier("jsonSchema"),
+                    t.identifier("oneOf")
+                  ),
+                  t.memberExpression(
+                    t.identifier("jsonSchema"),
+                    t.identifier("anyOf")
+                  )
                 )
               ),
               t.expressionStatement(
                 t.unaryExpression(
                   "delete",
-                  t.memberExpression(t.identifier("jsonSchema"), t.identifier("anyOf"))
+                  t.memberExpression(
+                    t.identifier("jsonSchema"),
+                    t.identifier("anyOf")
+                  )
                 )
-              )
+              ),
             ]);
-            
+
             prop.value = t.arrowFunctionExpression([param], body);
             stats.changes.unionOneOfToOverride++;
           }
@@ -201,11 +213,13 @@ export class ZodOpenApiMigrator {
     };
 
     // Helper function specifically for createDocument options (second argument)
-    const transformCreateDocumentOptions = (objectExpression: t.ObjectExpression) => {
+    const transformCreateDocumentOptions = (
+      objectExpression: t.ObjectExpression
+    ) => {
       let hasUnionOneOf = false;
       let defaultDateSchemaObject: t.ObjectExpression | null = null;
       let existingOverride: t.ObjectProperty | null = null;
-      
+
       // First pass: identify what needs to be transformed
       objectExpression.properties.forEach((prop) => {
         if (
@@ -217,7 +231,7 @@ export class ZodOpenApiMigrator {
         ) {
           hasUnionOneOf = true;
         }
-        
+
         if (
           t.isObjectProperty(prop) &&
           t.isIdentifier(prop.key) &&
@@ -226,7 +240,7 @@ export class ZodOpenApiMigrator {
         ) {
           defaultDateSchemaObject = prop.value;
         }
-        
+
         if (
           t.isObjectProperty(prop) &&
           t.isIdentifier(prop.key) &&
@@ -235,33 +249,41 @@ export class ZodOpenApiMigrator {
           existingOverride = prop;
         }
       });
-      
+
       // If we have transformations to apply
       if (hasUnionOneOf || defaultDateSchemaObject) {
         // Remove unionOneOf and defaultDateSchema properties
-        objectExpression.properties = objectExpression.properties.filter((prop) => {
-          if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
-            return prop.key.name !== "unionOneOf" && prop.key.name !== "defaultDateSchema";
+        objectExpression.properties = objectExpression.properties.filter(
+          (prop) => {
+            if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
+              return (
+                prop.key.name !== "unionOneOf" &&
+                prop.key.name !== "defaultDateSchema"
+              );
+            }
+            return true;
           }
-          return true;
-        });
-        
+        );
+
         // Build the override function body
         const bodyStatements: t.Statement[] = [];
-        
+
         // Add const def = zodSchema._zod.def;
         bodyStatements.push(
           t.variableDeclaration("const", [
             t.variableDeclarator(
               t.identifier("def"),
               t.memberExpression(
-                t.memberExpression(t.identifier("zodSchema"), t.identifier("_zod")),
+                t.memberExpression(
+                  t.identifier("zodSchema"),
+                  t.identifier("_zod")
+                ),
                 t.identifier("def")
               )
-            )
+            ),
           ])
         );
-        
+
         // Add union handling if needed
         if (hasUnionOneOf) {
           bodyStatements.push(
@@ -275,42 +297,53 @@ export class ZodOpenApiMigrator {
                 t.expressionStatement(
                   t.assignmentExpression(
                     "=",
-                    t.memberExpression(t.identifier("jsonSchema"), t.identifier("oneOf")),
-                    t.memberExpression(t.identifier("jsonSchema"), t.identifier("anyOf"))
+                    t.memberExpression(
+                      t.identifier("jsonSchema"),
+                      t.identifier("oneOf")
+                    ),
+                    t.memberExpression(
+                      t.identifier("jsonSchema"),
+                      t.identifier("anyOf")
+                    )
                   )
                 ),
                 t.expressionStatement(
                   t.unaryExpression(
                     "delete",
-                    t.memberExpression(t.identifier("jsonSchema"), t.identifier("anyOf"))
+                    t.memberExpression(
+                      t.identifier("jsonSchema"),
+                      t.identifier("anyOf")
+                    )
                   )
                 ),
-                t.returnStatement()
+                t.returnStatement(),
               ])
             )
           );
           stats.changes.unionOneOfToOverride++;
         }
-        
+
         // Add date handling if needed
         if (defaultDateSchemaObject) {
           const dateStatements: t.Statement[] = [];
-          
+
           // Convert each property in defaultDateSchema to an assignment
-          (defaultDateSchemaObject as t.ObjectExpression).properties.forEach((prop) => {
-            if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
-              dateStatements.push(
-                t.expressionStatement(
-                  t.assignmentExpression(
-                    "=",
-                    t.memberExpression(t.identifier("jsonSchema"), prop.key),
-                    prop.value as t.Expression
+          (defaultDateSchemaObject as t.ObjectExpression).properties.forEach(
+            (prop) => {
+              if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
+                dateStatements.push(
+                  t.expressionStatement(
+                    t.assignmentExpression(
+                      "=",
+                      t.memberExpression(t.identifier("jsonSchema"), prop.key),
+                      prop.value as t.Expression
+                    )
                   )
-                )
-              );
+                );
+              }
             }
-          });
-          
+          );
+
           bodyStatements.push(
             t.ifStatement(
               t.binaryExpression(
@@ -323,18 +356,24 @@ export class ZodOpenApiMigrator {
           );
           stats.changes.defaultDateSchemaToOverride++;
         }
-        
+
         // Create the override function
         const overrideFunction = t.arrowFunctionExpression(
           [
             t.objectPattern([
-              t.objectProperty(t.identifier("jsonSchema"), t.identifier("jsonSchema")),
-              t.objectProperty(t.identifier("zodSchema"), t.identifier("zodSchema"))
-            ])
+              t.objectProperty(
+                t.identifier("jsonSchema"),
+                t.identifier("jsonSchema")
+              ),
+              t.objectProperty(
+                t.identifier("zodSchema"),
+                t.identifier("zodSchema")
+              ),
+            ]),
           ],
           t.blockStatement(bodyStatements)
         );
-        
+
         if (existingOverride && t.isObjectProperty(existingOverride)) {
           // Replace existing override
           (existingOverride as t.ObjectProperty).value = overrideFunction;
@@ -348,36 +387,29 @@ export class ZodOpenApiMigrator {
     };
 
     // Helper function specifically for createSchema options (second argument)
-    const transformCreateSchemaOptions = (objectExpression: t.ObjectExpression) => {
+    const transformCreateSchemaOptions = (
+      objectExpression: t.ObjectExpression
+    ) => {
       let hasUnionOneOf = false;
       let defaultDateSchemaObject: t.ObjectExpression | null = null;
-      
+
       // First pass: identify transformations and find existing opts
       objectExpression.properties.forEach((prop, index) => {
         if (!t.isObjectProperty(prop)) return;
-        
-        if (
-          t.isIdentifier(prop.key) &&
-          prop.key.name === "schemaType"
-        ) {
+
+        if (t.isIdentifier(prop.key) && prop.key.name === "schemaType") {
           // Replace schemaType with io
           prop.key.name = "io";
           stats.changes.schemaTypeToIO++;
         }
 
-        if (
-          t.isIdentifier(prop.key) &&
-          prop.key.name === "componentRefPath"
-        ) {
+        if (t.isIdentifier(prop.key) && prop.key.name === "componentRefPath") {
           // Replace componentRefPath with schemaComponentRefPath
           prop.key.name = "schemaComponentRefPath";
           stats.changes.componentRefPath++;
         }
 
-        if (
-          t.isIdentifier(prop.key) &&
-          prop.key.name === "components"
-        ) {
+        if (t.isIdentifier(prop.key) && prop.key.name === "components") {
           // Replace components with schemaComponents
           prop.key.name = "schemaComponents";
           stats.changes.componentsToSchemaComponents++;
@@ -412,29 +444,37 @@ export class ZodOpenApiMigrator {
       // Handle unionOneOf and defaultDateSchema transformations
       if (hasUnionOneOf || defaultDateSchemaObject) {
         // Remove unionOneOf and defaultDateSchema properties
-        objectExpression.properties = objectExpression.properties.filter((prop) => {
-          if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
-            return prop.key.name !== "unionOneOf" && prop.key.name !== "defaultDateSchema";
+        objectExpression.properties = objectExpression.properties.filter(
+          (prop) => {
+            if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
+              return (
+                prop.key.name !== "unionOneOf" &&
+                prop.key.name !== "defaultDateSchema"
+              );
+            }
+            return true;
           }
-          return true;
-        });
+        );
 
         // Build the override function body
         const bodyStatements: t.Statement[] = [];
-        
+
         // Add const def = zodSchema._zod.def;
         bodyStatements.push(
           t.variableDeclaration("const", [
             t.variableDeclarator(
               t.identifier("def"),
               t.memberExpression(
-                t.memberExpression(t.identifier("zodSchema"), t.identifier("_zod")),
+                t.memberExpression(
+                  t.identifier("zodSchema"),
+                  t.identifier("_zod")
+                ),
                 t.identifier("def")
               )
-            )
+            ),
           ])
         );
-        
+
         // Add union handling if needed
         if (hasUnionOneOf) {
           bodyStatements.push(
@@ -448,42 +488,53 @@ export class ZodOpenApiMigrator {
                 t.expressionStatement(
                   t.assignmentExpression(
                     "=",
-                    t.memberExpression(t.identifier("jsonSchema"), t.identifier("oneOf")),
-                    t.memberExpression(t.identifier("jsonSchema"), t.identifier("anyOf"))
+                    t.memberExpression(
+                      t.identifier("jsonSchema"),
+                      t.identifier("oneOf")
+                    ),
+                    t.memberExpression(
+                      t.identifier("jsonSchema"),
+                      t.identifier("anyOf")
+                    )
                   )
                 ),
                 t.expressionStatement(
                   t.unaryExpression(
                     "delete",
-                    t.memberExpression(t.identifier("jsonSchema"), t.identifier("anyOf"))
+                    t.memberExpression(
+                      t.identifier("jsonSchema"),
+                      t.identifier("anyOf")
+                    )
                   )
                 ),
-                t.returnStatement()
+                t.returnStatement(),
               ])
             )
           );
           stats.changes.createSchemaUnionOneOfToOverride++;
         }
-        
+
         // Add date handling if needed
         if (defaultDateSchemaObject) {
           const dateStatements: t.Statement[] = [];
-          
+
           // Convert each property in defaultDateSchema to an assignment
-          (defaultDateSchemaObject as t.ObjectExpression).properties.forEach((prop) => {
-            if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
-              dateStatements.push(
-                t.expressionStatement(
-                  t.assignmentExpression(
-                    "=",
-                    t.memberExpression(t.identifier("jsonSchema"), prop.key),
-                    prop.value as t.Expression
+          (defaultDateSchemaObject as t.ObjectExpression).properties.forEach(
+            (prop) => {
+              if (t.isObjectProperty(prop) && t.isIdentifier(prop.key)) {
+                dateStatements.push(
+                  t.expressionStatement(
+                    t.assignmentExpression(
+                      "=",
+                      t.memberExpression(t.identifier("jsonSchema"), prop.key),
+                      prop.value as t.Expression
+                    )
                   )
-                )
-              );
+                );
+              }
             }
-          });
-          
+          );
+
           bodyStatements.push(
             t.ifStatement(
               t.binaryExpression(
@@ -501,24 +552,36 @@ export class ZodOpenApiMigrator {
         const overrideFunction = t.arrowFunctionExpression(
           [
             t.objectPattern([
-              t.objectProperty(t.identifier("jsonSchema"), t.identifier("jsonSchema")),
-              t.objectProperty(t.identifier("zodSchema"), t.identifier("zodSchema"))
-            ])
+              t.objectProperty(
+                t.identifier("jsonSchema"),
+                t.identifier("jsonSchema")
+              ),
+              t.objectProperty(
+                t.identifier("zodSchema"),
+                t.identifier("zodSchema")
+              ),
+            ]),
           ],
           t.blockStatement(bodyStatements)
         );
 
         // Find existing opts property after filtering
-        const existingOptsProperty = objectExpression.properties.find((prop) => {
-          return (
-            t.isObjectProperty(prop) &&
-            t.isIdentifier(prop.key) &&
-            prop.key.name === "opts" &&
-            t.isObjectExpression(prop.value)
-          );
-        });
+        const existingOptsProperty = objectExpression.properties.find(
+          (prop) => {
+            return (
+              t.isObjectProperty(prop) &&
+              t.isIdentifier(prop.key) &&
+              prop.key.name === "opts" &&
+              t.isObjectExpression(prop.value)
+            );
+          }
+        );
 
-        if (existingOptsProperty && t.isObjectProperty(existingOptsProperty) && t.isObjectExpression(existingOptsProperty.value)) {
+        if (
+          existingOptsProperty &&
+          t.isObjectProperty(existingOptsProperty) &&
+          t.isObjectExpression(existingOptsProperty.value)
+        ) {
           // Add override to existing opts object
           const optsObject = existingOptsProperty.value;
           optsObject.properties.push(
@@ -529,7 +592,7 @@ export class ZodOpenApiMigrator {
           const optsProperty = t.objectProperty(
             t.identifier("opts"),
             t.objectExpression([
-              t.objectProperty(t.identifier("override"), overrideFunction)
+              t.objectProperty(t.identifier("override"), overrideFunction),
             ])
           );
           objectExpression.properties.push(optsProperty);
@@ -684,12 +747,12 @@ export class ZodOpenApiMigrator {
         compact: false,
         concise: false,
       });
-      
+
       // Post-process to comment out effectType properties and add inline TODO comments
       if (stats.changes.effectTypeCommented > 0) {
         output.code = this.commentOutEffectTypeProperties(output.code);
       }
-      
+
       fs.writeFileSync(filePath, output.code);
     }
 
@@ -738,31 +801,67 @@ export class ZodOpenApiMigrator {
       console.log(chalk.blue(`    - Changed ${changes.refToId} 'ref' to 'id'`));
     }
     if (changes.refTypeToUnusedIO > 0) {
-      console.log(chalk.blue(`    - Changed ${changes.refTypeToUnusedIO} 'refType' to 'unusedIO'`));
+      console.log(
+        chalk.blue(
+          `    - Changed ${changes.refTypeToUnusedIO} 'refType' to 'unusedIO'`
+        )
+      );
     }
     if (changes.unionOneOfToOverride > 0) {
-      console.log(chalk.blue(`    - Changed ${changes.unionOneOfToOverride} 'unionOneOf' to 'override'`));
+      console.log(
+        chalk.blue(
+          `    - Changed ${changes.unionOneOfToOverride} 'unionOneOf' to 'override'`
+        )
+      );
     }
     if (changes.effectTypeCommented > 0) {
-      console.log(chalk.blue(`    - Commented out ${changes.effectTypeCommented} 'effectType' properties`));
+      console.log(
+        chalk.blue(
+          `    - Commented out ${changes.effectTypeCommented} 'effectType' properties`
+        )
+      );
     }
     if (changes.schemaTypeToIO > 0) {
-      console.log(chalk.blue(`    - Changed ${changes.schemaTypeToIO} 'schemaType' to 'io'`));
+      console.log(
+        chalk.blue(
+          `    - Changed ${changes.schemaTypeToIO} 'schemaType' to 'io'`
+        )
+      );
     }
     if (changes.componentRefPath > 0) {
-      console.log(chalk.blue(`    - Changed ${changes.componentRefPath} 'componentRefPath' to 'schemaComponentRefPath'`));
+      console.log(
+        chalk.blue(
+          `    - Changed ${changes.componentRefPath} 'componentRefPath' to 'schemaComponentRefPath'`
+        )
+      );
     }
     if (changes.componentsToSchemaComponents > 0) {
-      console.log(chalk.blue(`    - Changed ${changes.componentsToSchemaComponents} 'components' to 'schemaComponents'`));
+      console.log(
+        chalk.blue(
+          `    - Changed ${changes.componentsToSchemaComponents} 'components' to 'schemaComponents'`
+        )
+      );
     }
     if (changes.createSchemaUnionOneOfToOverride > 0) {
-      console.log(chalk.blue(`    - Changed ${changes.createSchemaUnionOneOfToOverride} 'unionOneOf' to 'opts.override' in createSchema`));
+      console.log(
+        chalk.blue(
+          `    - Changed ${changes.createSchemaUnionOneOfToOverride} 'unionOneOf' to 'opts.override' in createSchema`
+        )
+      );
     }
     if (changes.createSchemaDefaultDateSchemaToOverride > 0) {
-      console.log(chalk.blue(`    - Changed ${changes.createSchemaDefaultDateSchemaToOverride} 'defaultDateSchema' to 'opts.override' in createSchema`));
+      console.log(
+        chalk.blue(
+          `    - Changed ${changes.createSchemaDefaultDateSchemaToOverride} 'defaultDateSchema' to 'opts.override' in createSchema`
+        )
+      );
     }
     if (changes.defaultDateSchemaToOverride > 0) {
-      console.log(chalk.blue(`    - Changed ${changes.defaultDateSchemaToOverride} 'defaultDateSchema' to 'override' in createDocument`));
+      console.log(
+        chalk.blue(
+          `    - Changed ${changes.defaultDateSchemaToOverride} 'defaultDateSchema' to 'override' in createDocument`
+        )
+      );
     }
   }
 
@@ -778,15 +877,28 @@ export class ZodOpenApiMigrator {
         openapiToMetaChanges:
           acc.openapiToMetaChanges + stats.changes.openapiToMeta,
         refToIdChanges: acc.refToIdChanges + stats.changes.refToId,
-        refTypeToUnusedIOChanges: acc.refTypeToUnusedIOChanges + stats.changes.refTypeToUnusedIO,
-        unionOneOfToOverrideChanges: acc.unionOneOfToOverrideChanges + stats.changes.unionOneOfToOverride,
-        effectTypeCommented: acc.effectTypeCommented + stats.changes.effectTypeCommented,
-        schemaTypeToIOChanges: acc.schemaTypeToIOChanges + stats.changes.schemaTypeToIO,
-        componentRefPathChanges: acc.componentRefPathChanges + stats.changes.componentRefPath,
-        componentsToSchemaComponentsChanges: acc.componentsToSchemaComponentsChanges + stats.changes.componentsToSchemaComponents,
-        createSchemaUnionOneOfToOverrideChanges: acc.createSchemaUnionOneOfToOverrideChanges + stats.changes.createSchemaUnionOneOfToOverride,
-        createSchemaDefaultDateSchemaToOverrideChanges: acc.createSchemaDefaultDateSchemaToOverrideChanges + stats.changes.createSchemaDefaultDateSchemaToOverride,
-        defaultDateSchemaToOverrideChanges: acc.defaultDateSchemaToOverrideChanges + stats.changes.defaultDateSchemaToOverride,
+        refTypeToUnusedIOChanges:
+          acc.refTypeToUnusedIOChanges + stats.changes.refTypeToUnusedIO,
+        unionOneOfToOverrideChanges:
+          acc.unionOneOfToOverrideChanges + stats.changes.unionOneOfToOverride,
+        effectTypeCommented:
+          acc.effectTypeCommented + stats.changes.effectTypeCommented,
+        schemaTypeToIOChanges:
+          acc.schemaTypeToIOChanges + stats.changes.schemaTypeToIO,
+        componentRefPathChanges:
+          acc.componentRefPathChanges + stats.changes.componentRefPath,
+        componentsToSchemaComponentsChanges:
+          acc.componentsToSchemaComponentsChanges +
+          stats.changes.componentsToSchemaComponents,
+        createSchemaUnionOneOfToOverrideChanges:
+          acc.createSchemaUnionOneOfToOverrideChanges +
+          stats.changes.createSchemaUnionOneOfToOverride,
+        createSchemaDefaultDateSchemaToOverrideChanges:
+          acc.createSchemaDefaultDateSchemaToOverrideChanges +
+          stats.changes.createSchemaDefaultDateSchemaToOverride,
+        defaultDateSchemaToOverrideChanges:
+          acc.defaultDateSchemaToOverrideChanges +
+          stats.changes.defaultDateSchemaToOverride,
       }),
       {
         importsRemoved: 0,
@@ -840,10 +952,13 @@ export class ZodOpenApiMigrator {
 
     // Use regex to find and comment out effectType properties
     const effectTypeRegex = /(\s*)(effectType:\s*[^,\n}]+)([,\n])/g;
-    
-    return code.replace(effectTypeRegex, (match, indent, effectTypeProp, suffix) => {
-      // Comment out the effectType property and add TODO comment
-      return `${indent}// ${effectTypeProp}${suffix}${indent}${todoComment}${suffix}`;
-    });
+
+    return code.replace(
+      effectTypeRegex,
+      (match, indent, effectTypeProp, suffix) => {
+        // Comment out the effectType property and add TODO comment
+        return `${indent}// ${effectTypeProp}${suffix}${indent}${todoComment}${suffix}`;
+      }
+    );
   }
 }

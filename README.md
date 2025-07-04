@@ -7,44 +7,53 @@ A comprehensive command-line tool to help migrate codebases from zod-openapi v4 
 This tool performs the following migrations automatically:
 
 ### 1. **Removes `extendZodWithOpenApi` imports and calls**
+
 - Removes `extendZodWithOpenApi` from import statements
 - Removes calls to `extendZodWithOpenApi(z)`
 
 ### 2. **Converts `.openapi()` to `.meta()`**
+
 - Changes all `.openapi()` method calls to `.meta()`
 - Works with all Zod types (string, object, array, union, etc.)
 
 ### 3. **Converts `ref` to `id` in metadata**
+
 - Changes `ref: 'some-ref'` to `id: 'some-ref'` within `.meta()` calls
 - Handles nested `ref` properties in `header` and `param` objects
 - Recursively processes deeply nested objects
 - Works with `ZodOpenApi*` type objects and `createDocument` calls
 
 ### 4. **Converts `refType` to `unusedIO` in metadata**
+
 - Changes `refType: 'input'` to `unusedIO: 'input'` within `.meta()` calls
 - Supports all refType values: 'input', 'output', 'both'
 
 ### 5. **Transforms `unionOneOf: true` to `override` function**
+
 - Converts `unionOneOf: true` in `.meta()` calls to an `override` function
 - Converts `unionOneOf: true` in `createDocument` options to an `override` function
 - Converts `unionOneOf: true` in `createSchema` options to an `opts.override` function
 - Merges with existing `defaultDateSchema` transformations when both are present
 
 ### 6. **Comments out `effectType` in `.meta()` calls**
+
 - Adds `// TODO: effectType is not supported in v5` comment
 - Preserves the original property for manual review
 
 ### 7. **Migrates `createSchema` options**
+
 - Changes `schemaType` to `io`
 - Changes `componentRefPath` to `schemaComponentRefPath`
 - Changes `components` to `schemaComponents`
 - Converts `defaultDateSchema` to `opts.override` function
 
 ### 8. **Migrates `createDocument` options**
+
 - Converts `defaultDateSchema` to `override` function
 - Merges with `unionOneOf` transformations when both are present
 
 ### 9. **Adds `return;` statements to override functions**
+
 - Ensures all generated override functions have proper return statements
 
 ## Installation
@@ -82,25 +91,29 @@ node dist/index.js "src/**/*.ts" --dry-run --verbose --ignore "*.test.ts"
 
 ```typescript
 import { z } from "zod";
-import { extendZodWithOpenApi, createDocument, createSchema } from "zod-openapi";
+import {
+  extendZodWithOpenApi,
+  createDocument,
+  createSchema,
+} from "zod-openapi";
 
 extendZodWithOpenApi(z);
 
 // Basic schema transformations
 const UserSchema = z
   .object({
-    name: z.string().openapi({ 
+    name: z.string().openapi({
       description: "User name",
-      refType: "input" 
+      refType: "input",
     }),
-    age: z.number().openapi({ 
+    age: z.number().openapi({
       description: "User age",
-      effectType: "input" 
+      effectType: "input",
     }),
   })
-  .openapi({ 
+  .openapi({
     ref: "User",
-    unionOneOf: true
+    unionOneOf: true,
   });
 
 // Nested refs in header/param objects
@@ -112,37 +125,40 @@ const headerSchema = z.string().openapi({
 
 // createSchema with various options
 const schema = createSchema(z.date(), {
-  schemaType: 'input',
-  componentRefPath: '#/components/schemas',
+  schemaType: "input",
+  componentRefPath: "#/components/schemas",
   components: { schemas: {} },
   defaultDateSchema: {
-    type: 'string',
-    format: 'date-time'
+    type: "string",
+    format: "date-time",
   },
-  unionOneOf: true
+  unionOneOf: true,
 });
 
 // createDocument with options
-const document = createDocument({
-  openapi: '3.1.0',
-  info: { title: 'API', version: '1.0.0' },
-  paths: {
-    '/users': {
-      ref: 'registeredPath',
-      get: {
-        requestBody: {
-          ref: 'registeredRequestBody'
-        }
-      }
-    }
+const document = createDocument(
+  {
+    openapi: "3.1.0",
+    info: { title: "API", version: "1.0.0" },
+    paths: {
+      "/users": {
+        ref: "registeredPath",
+        get: {
+          requestBody: {
+            ref: "registeredRequestBody",
+          },
+        },
+      },
+    },
+  },
+  {
+    unionOneOf: true,
+    defaultDateSchema: {
+      type: "string",
+      format: "date-time",
+    },
   }
-}, {
-  unionOneOf: true,
-  defaultDateSchema: {
-    type: 'string',
-    format: 'date-time'
-  }
-});
+);
 ```
 
 ### After Migration
@@ -154,17 +170,17 @@ import { createDocument, createSchema } from "zod-openapi";
 // Basic schema transformations
 const UserSchema = z
   .object({
-    name: z.string().meta({ 
+    name: z.string().meta({
       description: "User name",
-      unusedIO: "input" 
+      unusedIO: "input",
     }),
-    age: z.number().meta({ 
+    age: z.number().meta({
       description: "User age",
       // TODO: effectType is not supported in v5
-      // effectType: "input" 
+      // effectType: "input"
     }),
   })
-  .meta({ 
+  .meta({
     id: "User",
     override: ({ jsonSchema, zodSchema }) => {
       const def = zodSchema._zod.def;
@@ -173,7 +189,7 @@ const UserSchema = z
         delete jsonSchema.anyOf;
         return;
       }
-    }
+    },
   });
 
 // Nested refs in header/param objects
@@ -185,8 +201,8 @@ const headerSchema = z.string().meta({
 
 // createSchema with various options
 const schema = createSchema(z.date(), {
-  io: 'input',
-  schemaComponentRefPath: '#/components/schemas',
+  io: "input",
+  schemaComponentRefPath: "#/components/schemas",
   schemaComponents: { schemas: {} },
   opts: {
     override: ({ jsonSchema, zodSchema }) => {
@@ -197,43 +213,46 @@ const schema = createSchema(z.date(), {
         return;
       }
       if (def.type === "date") {
-        jsonSchema.type = 'string';
-        jsonSchema.format = 'date-time';
+        jsonSchema.type = "string";
+        jsonSchema.format = "date-time";
         return;
       }
-    }
-  }
+    },
+  },
 });
 
 // createDocument with options
-const document = createDocument({
-  openapi: '3.1.0',
-  info: { title: 'API', version: '1.0.0' },
-  paths: {
-    '/users': {
-      id: 'registeredPath',
-      get: {
-        requestBody: {
-          id: 'registeredRequestBody'
-        }
+const document = createDocument(
+  {
+    openapi: "3.1.0",
+    info: { title: "API", version: "1.0.0" },
+    paths: {
+      "/users": {
+        id: "registeredPath",
+        get: {
+          requestBody: {
+            id: "registeredRequestBody",
+          },
+        },
+      },
+    },
+  },
+  {
+    override: ({ jsonSchema, zodSchema }) => {
+      const def = zodSchema._zod.def;
+      if (def.type === "union") {
+        jsonSchema.oneOf = jsonSchema.anyOf;
+        delete jsonSchema.anyOf;
+        return;
       }
-    }
+      if (def.type === "date") {
+        jsonSchema.type = "string";
+        jsonSchema.format = "date-time";
+        return;
+      }
+    },
   }
-}, {
-  override: ({ jsonSchema, zodSchema }) => {
-    const def = zodSchema._zod.def;
-    if (def.type === "union") {
-      jsonSchema.oneOf = jsonSchema.anyOf;
-      delete jsonSchema.anyOf;
-      return;
-    }
-    if (def.type === "date") {
-      jsonSchema.type = 'string';
-      jsonSchema.format = 'date-time';
-      return;
-    }
-  }
-});
+);
 ```
 
 ## Options
@@ -245,6 +264,7 @@ const document = createDocument({
 ### Default Ignored Directories
 
 The tool automatically ignores these common directories:
+
 - `node_modules/`
 - `dist/`
 - `build/`

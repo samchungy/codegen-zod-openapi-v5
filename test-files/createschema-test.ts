@@ -1,25 +1,26 @@
-import { z } from 'zod';
-import { createSchema } from 'zod-openapi';
-
-
+import { z } from "zod";
+import { createSchema } from "zod-openapi";
 
 // Test createSchema with schemaType option
-const inputSchema = createSchema(z.string(), { io: 'input' });
+const inputSchema = createSchema(z.string(), { io: "input" });
 
-const outputSchema = createSchema(z.object({
-  name: z.string(),
-  age: z.number()
-}), { io: 'output' });
+const outputSchema = createSchema(
+  z.object({
+    name: z.string(),
+    age: z.number(),
+  }),
+  { io: "output" }
+);
 
 const schema1 = createSchema(z.union([z.string(), z.number()]), {
-  io: 'input',
-  description: 'A union schema'
+  io: "input",
+  description: "A union schema",
 });
 
 // Test createSchema with other options (should not be transformed)
 const schema2 = createSchema(z.boolean(), {
-  otherOption: 'value',
-  description: 'A boolean schema'
+  otherOption: "value",
+  description: "A boolean schema",
 });
 
 // Test createSchema without second argument
