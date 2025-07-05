@@ -52,7 +52,10 @@ export class ZodOpenApiMigrator {
 
       const hasChanges = this.hasChanges(stats);
       if (hasChanges) {
-        totalFilesModified++;
+        // Only increment totalFilesModified if we actually modified the file (not in dry run)
+        if (!this.options.dryRun) {
+          totalFilesModified++;
+        }
         if (this.options.verbose) {
           console.log(chalk.green(`  ✓ Modified: ${file}`));
           this.logChanges(stats);
@@ -610,15 +613,15 @@ export class ZodOpenApiMigrator {
         // Handle zod imports
         if (path.node.source.value === "zod") {
           let hasZodImport = false;
-          
+
           // Check if this import has 'z' as named import or default import
           path.node.specifiers.forEach((spec) => {
             if (
               (t.isImportDefaultSpecifier(spec) && spec.local.name === "z") ||
-              (t.isImportSpecifier(spec) && 
-               t.isIdentifier(spec.imported) && 
-               spec.imported.name === "z" && 
-               spec.local.name === "z") ||
+              (t.isImportSpecifier(spec) &&
+                t.isIdentifier(spec.imported) &&
+                spec.imported.name === "z" &&
+                spec.local.name === "z") ||
               (t.isImportNamespaceSpecifier(spec) && spec.local.name === "z")
             ) {
               hasZodImport = true;
@@ -629,7 +632,7 @@ export class ZodOpenApiMigrator {
             // Transform to import * as z from 'zod/v4'
             path.node.source.value = "zod/v4";
             path.node.specifiers = [
-              t.importNamespaceSpecifier(t.identifier("z"))
+              t.importNamespaceSpecifier(t.identifier("z")),
             ];
             stats.changes.zodImportsMigrated++;
             hasModifications = true;
@@ -1012,13 +1015,22 @@ export class ZodOpenApiMigrator {
     // See: https://zod.dev/v4?id=overwrite`;
 
     // Use regex to find and comment out effectType properties
-    const effectTypeRegex = /(\s*)(effectType:\s*[^,\n}]+)([,\n])/g;
+    const effectTypeRegex = /(\s*)(effectType:\s*[^,\n}]+)([,\n}])/g;
 
     return code.replace(
       effectTypeRegex,
       (match, indent, effectTypeProp, suffix) => {
         // Comment out the effectType property and add TODO comment
-        return `${indent}// ${effectTypeProp}${suffix}${indent}${todoComment}${suffix}`;
+        if (suffix === "}") {
+          // Single property case
+          return `${indent}// ${effectTypeProp}
+
+${indent}${todoComment}
+${indent}${suffix}`;
+        } else {
+          // Multiple properties case
+          return `${indent}// ${effectTypeProp}${suffix}${indent}${todoComment}${suffix}`;
+        }
       }
     );
   }

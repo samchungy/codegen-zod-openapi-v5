@@ -1,6 +1,6 @@
 # codegen-zod-openapi-v5
 
-A comprehensive command-line tool to help migrate codebases from zod-openapi v4 to v5.
+An almost entirely vibe coded codemod tool to help migrate codebases from zod-openapi v4 to v5. Please check the output.
 
 ## Quick Start
 
@@ -22,6 +22,7 @@ This tool performs the following migrations automatically:
 - Removes calls to `extendZodWithOpenApi(z)`
 
 ### 2. **Migrates zod imports to zod/v4**
+
 - Changes `import { z } from 'zod'` to `import * as z from 'zod/v4'`
 - Changes `import z from 'zod'` to `import * as z from 'zod/v4'`
 - Changes `import * as z from 'zod'` to `import * as z from 'zod/v4'`
