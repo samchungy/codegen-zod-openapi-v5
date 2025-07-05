@@ -1,6 +1,6 @@
 {
   "name": "codemod-zod-openapi-v5",
-  "version": "1.0.4",
+  "version": "1.0.0",
   "description": "Migration tool for zod-openapi v4 to v5",
   "main": "dist/index.js",
   "bin": {
