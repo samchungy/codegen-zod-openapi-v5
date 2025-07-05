@@ -1,4 +1,4 @@
-# codegen-zod-openapi-v5
+# codemod-zod-openapi-v5
 
 An almost entirely vibe coded codemod tool to help migrate codebases from zod-openapi v4 to v5. Please check the output.
 
@@ -6,10 +6,10 @@ An almost entirely vibe coded codemod tool to help migrate codebases from zod-op
 
 ```bash
 # Migrate your entire src directory (dry run to preview changes)
-pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run
+pnpm dlx codemod-zod-openapi-v5 "src/**/*.ts" --dry-run
 
 # Run the actual migration
-pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts"
+pnpm dlx codemod-zod-openapi-v5 "src/**/*.ts"
 ```
 
 ## Features
@@ -91,19 +91,19 @@ Run the migration tool directly without installing:
 
 ```bash
 # Basic usage - migrate all TypeScript files in src directory
-pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts"
+pnpm dlx codemod-zod-openapi-v5 "src/**/*.ts"
 
 # Dry run (preview changes without modifying files)
-pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run
+pnpm dlx codemod-zod-openapi-v5 "src/**/*.ts" --dry-run
 
 # Verbose output
-pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --verbose
+pnpm dlx codemod-zod-openapi-v5 "src/**/*.ts" --verbose
 
 # Ignore specific patterns
-pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --ignore "src/test/**,src/generated/**"
+pnpm dlx codemod-zod-openapi-v5 "src/**/*.ts" --ignore "src/test/**,src/generated/**"
 
 # Combine options
-pnpm dlx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run --verbose --ignore "*.test.ts"
+pnpm dlx codemod-zod-openapi-v5 "src/**/*.ts" --dry-run --verbose --ignore "*.test.ts"
 ```
 
 ### Using npx or yarn dlx
@@ -112,10 +112,10 @@ For npm or yarn users:
 
 ```bash
 # Using npx
-npx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run
+npx codemod-zod-openapi-v5 "src/**/*.ts" --dry-run
 
 # Using yarn dlx
-yarn dlx codegen-zod-openapi-v5 "src/**/*.ts" --dry-run
+yarn dlx codemod-zod-openapi-v5 "src/**/*.ts" --dry-run
 ```
 
 ### Using Local Installation

@@ -1,5 +1,5 @@
 {
-  "name": "codegen-zod-openapi-v5",
+  "name": "codemod-zod-openapi-v5",
   "version": "1.0.4",
   "description": "Migration tool for zod-openapi v4 to v5",
   "main": "dist/index.js",
@@ -22,7 +22,7 @@
     "zod",
     "openapi",
     "migration",
-    "codegen"
+    "codemod"
   ],
   "author": "",
   "license": "MIT",
