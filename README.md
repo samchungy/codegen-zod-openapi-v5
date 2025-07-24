@@ -360,7 +360,7 @@ The tool provides detailed statistics on all transformations:
 
 ## Requirements
 
-- Node.js 22+
+- Node.js 20+
 - pnpm (recommended) or npm
 
 ## Development
